@@ -1,0 +1,48 @@
+name: CI/CD & Security
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Set up Docker
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+
+      # 3️⃣ Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t secure-api-app .
+
+      # 4️⃣ Scan Docker image for vulnerabilities
+      - name: Trivy Docker scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: secure-api-app
+          format: table
+          exit-code: 1        # Fail if vulnerabilities found
+          ignore-unfixed: false
+
+      # 5️⃣ Set up Python for code scanning
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # 6️⃣ Install Semgrep
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      # 7️⃣ Run Semgrep security scan
+      - name: Run Semgrep scan
+        run: semgrep --config=p/owasp
